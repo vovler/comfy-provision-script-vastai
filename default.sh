@@ -86,7 +86,7 @@ function provisioning_get_apt_packages() {
 }
 
 function provisioning_update_comfy(){
-    python "${COMFYUI_MANAGER_CLI_DIR}" update all
+    python "${COMFYUI_MANAGER_CLI_DIR}" update all --mode=remote
     python -m pip install -r /workspace/ComfyUI/requirements.txt
 }
 
