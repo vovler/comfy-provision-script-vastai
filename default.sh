@@ -88,6 +88,9 @@ function provisioning_start() {
     provisioning_get_files \
         "${COMFYUI_DIR}/models/ultralytics/bbox" \
         "${YOLO_MODELS[@]}"
+    provisioning_get_files \
+        "${COMFYUI_DIR}/user/default/workflows" \
+        "${WORKFLOWS[@]}"
     
     provisioning_print_end
 }
