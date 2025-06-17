@@ -6,12 +6,12 @@ COMFYUI_DIR=${WORKSPACE}/ComfyUI
 # Packages are installed after nodes so we can fix them...
 
 APT_PACKAGES=(
-    "sageattention"
+    #"package-1"
+    #"package-2"
 )
 
 PIP_PACKAGES=(
-    #"package-1"
-    #"package-2"
+    "sageattention"
 )
 
 NODES=(
@@ -125,7 +125,7 @@ function provisioning_get_nodes() {
                 printf "Updating node: %s...\n" "${repo}"
                 ( cd "$path" && git pull )
                 if [[ -e $requirements ]]; then
-                   pip install --no-cache-dir -r "$requirements"
+                   install --no-cache-dir -r "$requirements"
                 fi
             fi
         else
