@@ -12,6 +12,8 @@ APT_PACKAGES=(
 
 PIP_PACKAGES=(
     "sageattention"
+    "GitPython"
+    "PyGithub"
 )
 
 NODES=(
