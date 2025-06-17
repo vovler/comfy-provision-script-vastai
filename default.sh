@@ -50,6 +50,12 @@ ESRGAN_MODELS=(
 CONTROLNET_MODELS=(
 )
 
+YOLO_MODELS=(
+    #face_yolo8m.pt is automatically installed with impact-subpack
+    "https://huggingface.co/Bingsu/adetailer/resolve/main/face_yolov8s.pt"
+    "https://huggingface.co/Bingsu/adetailer/resolve/main/face_yolov8n.pt"
+)
+
 ### DO NOT EDIT BELOW HERE UNLESS YOU KNOW WHAT YOU ARE DOING ###
 
 function provisioning_start() {
@@ -76,6 +82,12 @@ function provisioning_start() {
     provisioning_get_files \
         "${COMFYUI_DIR}/models/esrgan" \
         "${ESRGAN_MODELS[@]}"
+    provisioning_get_files \
+        "${COMFYUI_DIR}/models/esrgan" \
+        "${ESRGAN_MODELS[@]}"
+    provisioning_get_files \
+        "${COMFYUI_DIR}/models/ultralytics/bbox" \
+        "${YOLO_MODELS[@]}"
     
     provisioning_print_end
 }
