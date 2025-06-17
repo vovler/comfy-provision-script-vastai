@@ -2,7 +2,7 @@
 
 source /venv/main/bin/activate
 COMFYUI_DIR=${WORKSPACE}/ComfyUI
-COMFYUI_MANAGER_CLI_DIR=${COMFYUI_DIR}I/custom_nodes/ComfyUI-Manager/cm-cli.py
+COMFYUI_MANAGER_CLI_DIR=${COMFYUI_DIR}/custom_nodes/ComfyUI-Manager/cm-cli.py
 # Packages are installed after nodes so we can fix them...
 
 APT_PACKAGES=(
