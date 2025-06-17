@@ -14,11 +14,14 @@ PIP_PACKAGES=(
     "sageattention"
 )
 
+#PLEASE USE https://api.comfy.org/nodes?page=1&limit=300&comfyui_version=0&form_factor= and go up the pages till you find your node to get the correct node_id of the node you want to install.
+#IT'S NOT ALWAYS THE PACKAGE'S GITHUB NAME OR THE NAME IN THE Manager's GUI AND YOU WILL NOT FIND THE ID USING INPECT ELEMENT EITHER!!!
+#LOST 3 HOURS DEBUGGING ComfyUI-Manager for this shit. SUCK MY DICK.
 NODES=(
-    "ComfyUI-Impact-Pack"
-    "ComfyUI-Impact-Subpack"
+    "comfyui-impact-pack"
+    "comfyui-impact-subpack"
     "ComfyUI-Crystools"
-    "ComfyUI_TensorRT"
+    "comfyui_tensorrt"
     "efficiency-nodes-comfyui"
 )
 
