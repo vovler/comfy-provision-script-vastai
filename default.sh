@@ -15,6 +15,7 @@ PIP_PACKAGES=(
 )
 
 #PLEASE USE https://api.comfy.org/nodes?page=1&limit=300&comfyui_version=0&form_factor= and go up the pages till you find your node to get the correct node_id of the node you want to install.
+#If you want to double check if the node_id is correct open https://api.comfy.org/nodes/NODE_ID_GOES_HERE/install , if it doesnt say node not found, you're good.
 #IT'S NOT ALWAYS THE PACKAGE'S GITHUB NAME OR THE NAME IN THE Manager's GUI AND YOU WILL NOT FIND THE ID USING INPECT ELEMENT EITHER!!!
 #LOST 3 HOURS DEBUGGING ComfyUI-Manager for this shit. SUCK MY DICK.
 NODES=(
