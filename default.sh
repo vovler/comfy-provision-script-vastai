@@ -15,6 +15,8 @@ PIP_PACKAGES=(
 )
 
 NODES=(
+    "https://github.com/Comfy-Org/ComfyUI-Manager"
+    "https://github.com/cubiq/ComfyUI_essentials"
     "https://github.com/ltdrdata/ComfyUI-Impact-Pack"
     "https://github.com/ltdrdata/ComfyUI-Impact-Subpack"
     "https://github.com/crystian/ComfyUI-Crystools"
@@ -82,27 +84,46 @@ function provisioning_get_apt_packages() {
 }
 
 function provisioning_update_comfy(){
-    # Remember where we started
-    ORIG_DIR="$(pwd)"
+    ORIG_DIR=$(pwd)
     
-    echo "⏩  Updating ComfyUI in: ${COMFYUI_DIR}"
-    cd "${COMFYUI_DIR}"
+    if [[ ! -d "$COMFYUI_DIR/.git" ]]; then
+      echo "❌  No Git repo found at: $COMFYUI_DIR" >&2
+      exit 1
+    fi
+    cd "$COMFYUI_DIR"
     
-    # Core repo
-    git pull --ff-only
+    ### --- 2. Determine default branch (main or master) ---------------------------
+    DEFAULT_BRANCH=$(git symbolic-ref --quiet --short refs/remotes/origin/HEAD 2>/dev/null \
+                     | cut -d/ -f2) || DEFAULT_BRANCH="main"
     
-    # Custom nodes / submodules
-    git submodule update --init --recursive --remote
-    
-    # refresh Python dependencies
-    if [[ -f requirements.txt ]]; then
-      echo "📦  Updating Python packages..."
-      pip install --upgrade -r requirements.txt
+    ### --- 3. Check out the default branch ----------------------------------------
+    if ! git show-ref --quiet --verify "refs/heads/$DEFAULT_BRANCH"; then
+      git checkout -b "$DEFAULT_BRANCH" "origin/$DEFAULT_BRANCH"
+    else
+      git checkout "$DEFAULT_BRANCH"
     fi
     
-    # Return to original directory
-    cd "${ORIG_DIR}"
-    echo "✅  Done — back in ${ORIG_DIR}"
+    ### --- 4. Pull the latest changes ---------------------------------------------
+    git pull --ff-only origin "$DEFAULT_BRANCH"
+    
+    ### --- 5. Check out latest stable tag (vX.Y.Z) --------------------------------
+    LATEST_TAG=$(git tag -l 'v*' --sort=-v:refname | head -n 1)
+    if [[ -n "$LATEST_TAG" ]]; then
+      echo "🏷️  Checking out stable tag: $LATEST_TAG"
+      git checkout --detach "$LATEST_TAG"
+    else
+      echo "⚠️  No vX.Y.Z tag found – staying on $DEFAULT_BRANCH."
+    fi
+    
+    ### --- 6. Upgrade Python dependencies -----------------------------------------
+    if [[ -f "requirements.txt" ]]; then
+      echo "📦 Installing/upgrading Python dependencies..."
+      python3 -m pip install --upgrade -r requirements.txt
+    fi
+    
+    ### --- 7. Done ----------------------------------------------------------------
+    echo "✅ ComfyUI setup/update complete."
+    cd "$ORIG_DIR"
 }
 
 function provisioning_get_pip_packages() {
@@ -121,13 +142,11 @@ function provisioning_get_nodes() {
         path="${COMFYUI_DIR}/custom_nodes/${dir}"
         requirements="${path}/requirements.txt"
         if [[ -d $path ]]; then
-            if [[ ${AUTO_UPDATE,,} != "false" ]]; then
                 printf "Updating node: %s...\n" "${repo}"
                 ( cd "$path" && git pull )
                 if [[ -e $requirements ]]; then
-                   install --no-cache-dir -r "$requirements"
+                   pip install --no-cache-dir -r "$requirements"
                 fi
-            fi
         else
             printf "Downloading node: %s...\n" "${repo}"
             git clone "${repo}" "${path}" --recursive
