@@ -6,8 +6,7 @@ COMFYUI_DIR=${WORKSPACE}/ComfyUI
 # Packages are installed after nodes so we can fix them...
 
 APT_PACKAGES=(
-    #"package-1"
-    #"package-2"
+    "sageattention"
 )
 
 PIP_PACKAGES=(
@@ -52,8 +51,8 @@ CONTROLNET_MODELS=(
 function provisioning_start() {
     provisioning_print_header
     provisioning_get_apt_packages
-    provisioning_get_nodes
     provisioning_get_pip_packages
+    provisioning_get_nodes
     provisioning_get_files \
         "${COMFYUI_DIR}/models/checkpoints" \
         "${CHECKPOINT_MODELS[@]}"
@@ -72,10 +71,6 @@ function provisioning_start() {
     provisioning_get_files \
         "${COMFYUI_DIR}/models/esrgan" \
         "${ESRGAN_MODELS[@]}"
-        
-    pip install --upgrade pip
-    /venv/main/bin/python -m pip install -r /workspace/ComfyUI/requirements.txt
-    /venv/main/bin/python -m pip install sageattention
     
     provisioning_print_end
 }
@@ -86,10 +81,38 @@ function provisioning_get_apt_packages() {
     fi
 }
 
+function provisioning_update_comfy(){
+    # Remember where we started
+    ORIG_DIR="$(pwd)"
+    
+    echo "⏩  Updating ComfyUI in: ${COMFYUI_DIR}"
+    cd "${COMFYUI_DIR}"
+    
+    # Core repo
+    git pull --ff-only
+    
+    # Custom nodes / submodules
+    git submodule update --init --recursive --remote
+    
+    # refresh Python dependencies
+    if [[ -f requirements.txt ]]; then
+      echo "📦  Updating Python packages..."
+      pip install --upgrade -r requirements.txt
+    fi
+    
+    # Return to original directory
+    cd "${ORIG_DIR}"
+    echo "✅  Done — back in ${ORIG_DIR}"
+}
+
 function provisioning_get_pip_packages() {
+    pip install --upgrade pip
     if [[ -n $PIP_PACKAGES ]]; then
             pip install --no-cache-dir ${PIP_PACKAGES[@]}
     fi
+    provisioning_update_comfy
+    
+    
 }
 
 function provisioning_get_nodes() {
