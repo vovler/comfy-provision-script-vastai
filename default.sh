@@ -2,7 +2,7 @@
 
 source /venv/main/bin/activate
 COMFYUI_DIR=${WORKSPACE}/ComfyUI
-
+COMFYUI_MANAGER_CLI_DIR=${COMFYUI_DIR}I/custom_nodes/ComfyUI-Manager/cm-cli.py
 # Packages are installed after nodes so we can fix them...
 
 APT_PACKAGES=(
@@ -12,18 +12,14 @@ APT_PACKAGES=(
 
 PIP_PACKAGES=(
     "sageattention"
-    "GitPython"
-    "PyGithub"
 )
 
 NODES=(
-    "https://github.com/Comfy-Org/ComfyUI-Manager"
-    "https://github.com/cubiq/ComfyUI_essentials"
-    "https://github.com/ltdrdata/ComfyUI-Impact-Pack"
-    "https://github.com/ltdrdata/ComfyUI-Impact-Subpack"
-    "https://github.com/crystian/ComfyUI-Crystools"
-    "https://github.com/comfyanonymous/ComfyUI_TensorRT"
-    "https://github.com/jags111/efficiency-nodes-comfyui"
+    "ComfyUI-Impact-Pack"
+    "ComfyUI-Impact-Subpack"
+    "ComfyUI-Crystools"
+    "ComfyUI_TensorRT"
+    "efficiency-nodes-comfyui"
 )
 
 WORKFLOWS=(
@@ -56,6 +52,7 @@ function provisioning_start() {
     provisioning_print_header
     provisioning_get_apt_packages
     provisioning_get_pip_packages
+    provisioning_update_comfy
     provisioning_get_nodes
     provisioning_get_files \
         "${COMFYUI_DIR}/models/checkpoints" \
@@ -86,46 +83,8 @@ function provisioning_get_apt_packages() {
 }
 
 function provisioning_update_comfy(){
-    ORIG_DIR=$(pwd)
-    
-    if [[ ! -d "$COMFYUI_DIR/.git" ]]; then
-      echo "❌  No Git repo found at: $COMFYUI_DIR" >&2
-      exit 1
-    fi
-    cd "$COMFYUI_DIR"
-    
-    ### --- 2. Determine default branch (main or master) ---------------------------
-    DEFAULT_BRANCH=$(git symbolic-ref --quiet --short refs/remotes/origin/HEAD 2>/dev/null \
-                     | cut -d/ -f2) || DEFAULT_BRANCH="main"
-    
-    ### --- 3. Check out the default branch ----------------------------------------
-    if ! git show-ref --quiet --verify "refs/heads/$DEFAULT_BRANCH"; then
-      git checkout -b "$DEFAULT_BRANCH" "origin/$DEFAULT_BRANCH"
-    else
-      git checkout "$DEFAULT_BRANCH"
-    fi
-    
-    ### --- 4. Pull the latest changes ---------------------------------------------
-    git pull --ff-only origin "$DEFAULT_BRANCH"
-    
-    ### --- 5. Check out latest stable tag (vX.Y.Z) --------------------------------
-    LATEST_TAG=$(git tag -l 'v*' --sort=-v:refname | head -n 1)
-    if [[ -n "$LATEST_TAG" ]]; then
-      echo "🏷️  Checking out stable tag: $LATEST_TAG"
-      git checkout --detach "$LATEST_TAG"
-    else
-      echo "⚠️  No vX.Y.Z tag found – staying on $DEFAULT_BRANCH."
-    fi
-    
-    ### --- 6. Upgrade Python dependencies -----------------------------------------
-    if [[ -f "requirements.txt" ]]; then
-      echo "📦 Installing/upgrading Python dependencies..."
-      python3 -m pip install --upgrade -r requirements.txt
-    fi
-    
-    ### --- 7. Done ----------------------------------------------------------------
-    echo "✅ ComfyUI setup/update complete."
-    cd "$ORIG_DIR"
+    python "${COMFYUI_MANAGER_CLI_DIR}" update all
+    python -m pip install -r /workspace/ComfyUI/requirements.txt
 }
 
 function provisioning_get_pip_packages() {
@@ -133,30 +92,10 @@ function provisioning_get_pip_packages() {
     if [[ -n $PIP_PACKAGES ]]; then
             pip install --no-cache-dir ${PIP_PACKAGES[@]}
     fi
-    provisioning_update_comfy
-    
-    
 }
 
 function provisioning_get_nodes() {
-    for repo in "${NODES[@]}"; do
-        dir="${repo##*/}"
-        path="${COMFYUI_DIR}/custom_nodes/${dir}"
-        requirements="${path}/requirements.txt"
-        if [[ -d $path ]]; then
-                printf "Updating node: %s...\n" "${repo}"
-                ( cd "$path" && git pull )
-                if [[ -e $requirements ]]; then
-                   pip install --no-cache-dir -r "$requirements"
-                fi
-        else
-            printf "Downloading node: %s...\n" "${repo}"
-            git clone "${repo}" "${path}" --recursive
-            if [[ -e $requirements ]]; then
-                pip install --no-cache-dir -r "${requirements}"
-            fi
-        fi
-    done
+    python "${COMFYUI_MANAGER_CLI_DIR}" install "${NODES[@]}"
 }
 
 function provisioning_get_files() {
