@@ -3,27 +3,41 @@
 source /venv/main/bin/activate
 COMFYUI_DIR=${WORKSPACE}/ComfyUI
 COMFYUI_MANAGER_CLI_DIR=${COMFYUI_DIR}/custom_nodes/ComfyUI-Manager/cm-cli.py
-# Packages are installed after nodes so we can fix them...
 
+# -----------------------------------------------------------------------------
+# Configuration
+# -----------------------------------------------------------------------------
+# Path to the ComfyUI‑Manager configuration file that controls the security level.
+# This script guarantees that the security level is forced to **low** before any
+# other provisioning steps run, as requested.
+CONFIG_FILE="/workspace/ComfyUI/user/default/ComfyUI-Manager/config.ini"
+
+# Packages are installed after nodes so we can fix them if needed.
 APT_PACKAGES=(
     #"package-1"
     #"package-2"
 )
 
 PIP_PACKAGES=(
-    "sageattention"
 )
 
-#PLEASE USE https://api.comfy.org/nodes?page=1&limit=300&comfyui_version=0&form_factor= and go up the pages till you find your node to get the correct node_id of the node you want to install.
-#If you want to double check if the node_id is correct open https://api.comfy.org/nodes/NODE_ID_GOES_HERE/install , if it doesnt say node not found, you're good.
-#IT'S NOT ALWAYS THE PACKAGE'S GITHUB NAME OR THE NAME IN THE Manager's GUI AND YOU WILL NOT FIND THE ID USING INPECT ELEMENT EITHER!!!
-#LOST 3 HOURS DEBUGGING ComfyUI-Manager for this shit. SUCK MY DICK.
+# -----------------------------------------------------------------------------
+# Node, workflow and model definitions
+# -----------------------------------------------------------------------------
+# PLEASE USE https://api.comfy.org/nodes?page=1&limit=300&comfyui_version=0&form_factor=
+# and iterate through the pages until you find your node to get the correct node_id.
+# If you want to double‑check whether the node_id is correct open
+# https://api.comfy.org/nodes/NODE_ID_GOES_HERE/install . If it doesn’t say
+# "node not found", you’re good. IT'S NOT ALWAYS THE PACKAGE'S GITHUB NAME OR THE
+# NAME IN THE Manager's GUI AND YOU WILL NOT FIND THE ID USING INPECT ELEMENT EITHER!!!
+# LOST 3 HOURS DEBUGGING ComfyUI‑Manager FOR THIS SHIT.
 NODES=(
     "comfyui-impact-pack"
     "comfyui-impact-subpack"
     "ComfyUI-Crystools"
     "comfyui_tensorrt"
     "efficiency-nodes-comfyui"
+    "https://github.com/vovler/ComfyUI-vovlerTools"
 )
 
 WORKFLOWS=(
@@ -51,15 +65,44 @@ CONTROLNET_MODELS=(
 )
 
 YOLO_MODELS=(
-    #face_yolo8m.pt is automatically installed with impact-subpack
+    # face_yolo8m.pt is automatically installed with impact‑subpack
     "https://huggingface.co/Bingsu/adetailer/resolve/main/face_yolov8s.pt"
     "https://huggingface.co/Bingsu/adetailer/resolve/main/face_yolov8n.pt"
 )
 
-### DO NOT EDIT BELOW HERE UNLESS YOU KNOW WHAT YOU ARE DOING ###
+### --------------------------------------------------------------------------
+### FUNCTIONS
+### --------------------------------------------------------------------------
+
+#------------------------------------------------------------------------------
+# Guarantee low security level BEFORE anything else happens
+#------------------------------------------------------------------------------
+function provisioning_set_security_level() {
+    local cfg="$CONFIG_FILE"
+    # Ensure directory exists
+    mkdir -p "$(dirname "$cfg")"
+
+    if [[ ! -f "$cfg" ]]; then
+        # Fresh file: create the section and setting
+        printf "[general]\nsecurity_level = low\n" > "$cfg"
+    else
+        # Existing file: replace or append the setting
+        if grep -qE "^\s*security_level\s*=" "$cfg"; then
+            sed -i 's/^\s*security_level\s*=.*/security_level = low/' "$cfg"
+        else
+            echo "security_level = low" >> "$cfg"
+        fi
+    fi
+
+    printf "Configured security_level=low in %s\n" "$cfg"
+}
 
 function provisioning_start() {
     provisioning_print_header
+
+    # *** Set security level first ***
+    provisioning_set_security_level
+
     provisioning_get_apt_packages
     provisioning_get_pip_packages
     provisioning_update_comfy
@@ -91,13 +134,13 @@ function provisioning_start() {
     provisioning_get_files \
         "${COMFYUI_DIR}/user/default/workflows" \
         "${WORKFLOWS[@]}"
-    
+
     provisioning_print_end
 }
 
 function provisioning_get_apt_packages() {
     if [[ -n $APT_PACKAGES ]]; then
-            sudo $APT_INSTALL ${APT_PACKAGES[@]}
+        sudo $APT_INSTALL ${APT_PACKAGES[@]}
     fi
 }
 
@@ -109,7 +152,7 @@ function provisioning_update_comfy(){
 function provisioning_get_pip_packages() {
     pip install --upgrade pip
     if [[ -n $PIP_PACKAGES ]]; then
-            pip install --no-cache-dir ${PIP_PACKAGES[@]}
+        pip install --no-cache-dir ${PIP_PACKAGES[@]}
     fi
 }
 
@@ -119,7 +162,6 @@ function provisioning_get_nodes() {
 
 function provisioning_get_files() {
     if [[ -z $2 ]]; then return 1; fi
-    
     dir="$1"
     mkdir -p "$dir"
     shift
