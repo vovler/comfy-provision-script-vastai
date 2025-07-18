@@ -94,7 +94,7 @@ function provisioning_set_security_level() {
         fi
     fi
 
-    printf "Configured security_level=low in %s\n" "$cfg"
+    printf "Configured security_level=weak in %s\n" "$cfg"
 }
 
 function provisioning_start() {
