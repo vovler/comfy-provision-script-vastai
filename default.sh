@@ -84,13 +84,13 @@ function provisioning_set_security_level() {
 
     if [[ ! -f "$cfg" ]]; then
         # Fresh file: create the section and setting
-        printf "[general]\nsecurity_level = low\n" > "$cfg"
+        printf "[general]\nsecurity_level = weak\n" > "$cfg"
     else
         # Existing file: replace or append the setting
         if grep -qE "^\s*security_level\s*=" "$cfg"; then
-            sed -i 's/^\s*security_level\s*=.*/security_level = low/' "$cfg"
+            sed -i 's/^\s*security_level\s*=.*/security_level = weak/' "$cfg"
         else
-            echo "security_level = low" >> "$cfg"
+            echo "security_level = weak" >> "$cfg"
         fi
     fi
 
